@@ -47,12 +47,14 @@ async def process_symbol(symbol):
             Indicators
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             '''
+            # exponential moving average
             def ema(period):
                 ema = df['close'].ewm(
                     span=period, adjust=False).mean().iloc[-1]
                 return ema
 
-            def ATR(period):  # Average True Range
+            # Average True Range
+            def ATR(period):
 
                 df['high_low'] = df['high'] - df['low']
                 df['high_prev_close'] = abs(df['high'] - df['close'].shift(1))
@@ -64,7 +66,7 @@ async def process_symbol(symbol):
                 df['atr'] = df['true_range'].rolling(window=period).mean()
                 ATR = df['atr'][-2:-1].to_numpy()
                 return ATR
-
+            # 20-day and 50-day moving average
             ema_20 = ema(20)
             ema_50 = ema(50)
 
@@ -124,7 +126,7 @@ async def process_symbol(symbol):
             def get_position_size():
                 sl, tp = get_risk_reward_ratio()
                 balance = get_balance()
-                risk_amount = balance * 0.05
+                risk_amount = balance * 0.01  # one percent risk per trade
                 lot_size = risk_amount / sl.item()  # contract size/position size
                 # rounded lot_size varies, please check Binance allowed contract size for each pair
                 if (symbol == 'BTCUSDT'):
@@ -295,15 +297,16 @@ async def process_symbol(symbol):
                     print("There is already an open position for", symbol)
 
             '''
-            Logic here
+            Strategy here
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             '''
 
             lot_size = get_position_size()
             # print('lot_size:', lot_size)
 
+            # buy if 20-day moving average is above 50-day moving average
             long_condition = ema_20 > ema_50
-            short_condition = ema_20 < ema_50
+            short_condition = ema_20 < ema_50  # sell
 
             if long_condition:
                 return place_buy_order(symbol, lot_size)
